@@ -26,7 +26,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Xcodebuild
       run: |
-        xcodebuild build -scheme mqtt-nio -destination 'platform=iOS Simulator,name=iPhone 12'
+        xcodebuild build -scheme mqtt-nio -destination 'platform=iOS Simulator,name=iPhone 11'
 
   linux:
     runs-on: ubuntu-latest
@@ -34,37 +34,34 @@ jobs:
       matrix:
         tag:
           - swift:5.3
-    container:
-      image: ${{ matrix.tag }}
+#    container:
+#      image: ${{ matrix.tag }}
+#    services:
+#      localhost:
+#        image: eclipse-mosquitto
+#        volumes:
+#          - /mosquitto/config/:/mosquitto/config/
+#          - /mosquitto/certs/:/mosquitto/certs/
+#        ports:
+#          - "1883:1883"
+#          - "8883:8883"
+#          - "8080:8080"
+#          - "8081:8081"
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    #- name: Install dependencies
-    #  run: |
-    #    apt-get update -qq
-    #    apt-get install -q -y tzdata zlib1g-dev curl
-    - name: Install docker-compose
-      run: |
-        pip install docker-compose
-        docker-compose --version
-    #  run: |
-    #    curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o docker-compose
-     #   chmod a+x docker-compose
-     #   ./docker-compose --version
-    - name: Mosquitto container
-      run: |
-        docker-compose pull
-        docker-compose up -d
+    - name: Mosquitto
+      run: docker-compose up -d
     - name: Test
       run: swift test --enable-test-discovery --enable-code-coverage --sanitize=thread
-    #- name: Convert coverage files
-    #  run: |
-    #    llvm-cov export -format="lcov" \
-    #      .build/debug/soto-corePackageTests.xctest \
-    #      -ignore-filename-regex="\/Tests\/" \
-    #      -instr-profile .build/debug/codecov/default.profdata > info.lcov
-    #- name: Upload to codecov.io
-    #  uses: codecov/codecov-action@v1
-    #  with:
-    #    file: info.lcov
+#   - name: Convert coverage files
+#     run: |
+#       llvm-cov export -format="lcov" \
+#         .build/debug/soto-corePackageTests.xctest \
+#         -ignore-filename-regex="\/Tests\/" \
+#         -instr-profile .build/debug/codecov/default.profdata > info.lcov
+#   - name: Upload to codecov.io
+#      uses: codecov/codecov-action@v1
+#      with:
+#        file: info.lcov
 

@@ -10,7 +10,7 @@ final class MQTTNIOTests: XCTestCase {
     
     func createClient() -> MQTTClient {
         MQTTClient(
-            host: "localhost",
+            host: ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost",
             port: 1883,
             eventLoopGroupProvider: .createNew,
             logger: self.logger
@@ -19,7 +19,7 @@ final class MQTTNIOTests: XCTestCase {
     
     func createWebSocketClient() -> MQTTClient {
         MQTTClient(
-            host: "localhost",
+            host: ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost",
             port: 8080,
             eventLoopGroupProvider: .createNew,
             logger: self.logger,
@@ -29,7 +29,7 @@ final class MQTTNIOTests: XCTestCase {
 
     func createSSLClient() throws -> MQTTClient {
         return try MQTTClient(
-            host: "localhost",
+            host: ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost",
             port: 8883,
             eventLoopGroupProvider: .createNew,
             logger: self.logger,
@@ -39,7 +39,7 @@ final class MQTTNIOTests: XCTestCase {
 
     func createWebSocketAndSSLClient() throws -> MQTTClient {
         return try MQTTClient(
-            host: "localhost",
+            host: ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost",
             port: 8081,
             eventLoopGroupProvider: .createNew,
             logger: self.logger,
