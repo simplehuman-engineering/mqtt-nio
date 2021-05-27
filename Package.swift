@@ -11,7 +11,6 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.21.0"),
-        .package(url: "https://github.com/daltonclaybrook/swift-nio-ssl/", .branch("watch-asm-macro")),
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.6.0")
     ],
     targets: [
@@ -21,7 +20,6 @@ let package = Package(
             .product(name: "NIO", package: "swift-nio"),
             .product(name: "NIOHTTP1", package: "swift-nio"),
             .product(name: "NIOWebSocket", package: "swift-nio"),
-            .product(name: "NIOSSL", package: "swift-nio-ssl"),
             .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
         ]),
         .target(name: "CCoreMQTT", dependencies: []),

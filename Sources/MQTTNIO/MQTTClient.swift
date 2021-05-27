@@ -5,9 +5,6 @@ import Network
 #endif
 import NIO
 import NIOConcurrencyHelpers
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
 import NIOTransportServices
 
 /// Swift NIO MQTT Client
@@ -115,10 +112,6 @@ final public class MQTTClient {
         case .createNew:
             #if canImport(Network)
             switch configuration.tlsConfiguration {
-            #if canImport(NIOSSL)
-            case .niossl:
-                self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-            #endif
             case .ts, .none:
                 self.eventLoopGroup = NIOTSEventLoopGroup()
             }

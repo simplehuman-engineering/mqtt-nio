@@ -5,9 +5,6 @@ import NIO
 import NIOConcurrencyHelpers
 import NIOFoundationCompat
 import NIOHTTP1
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
 @testable import MQTTNIO
 
 final class MQTTNIOTests: XCTestCase {
@@ -34,24 +31,6 @@ final class MQTTNIOTests: XCTestCase {
         try client.disconnect().wait()
         try client.syncShutdownGracefully()
     }
-
-    #if canImport(NIOSSL)
-    func testSSLConnect() throws {
-        let client = try createSSLClient(identifier: "testSSLConnect")
-        _ = try client.connect().wait()
-        try client.ping().wait()
-        try client.disconnect().wait()
-        try client.syncShutdownGracefully()
-    }
-
-    func testWebsocketAndSSLConnect() throws {
-        let client = try createWebSocketAndSSLClient(identifier: "testWebsocketAndSSLConnect")
-        _ = try client.connect().wait()
-        try client.ping().wait()
-        try client.disconnect().wait()
-        try client.syncShutdownGracefully()
-    }
-    #endif
     
     func testMQTTPublishQoS0() throws {
         let client = self.createClient(identifier: "testMQTTPublishQoS0")
@@ -410,30 +389,6 @@ final class MQTTNIOTests: XCTestCase {
         )
     }
 
-    #if canImport(NIOSSL)
-    func createSSLClient(identifier: String) throws -> MQTTClient {
-        return try MQTTClient(
-            host: Self.hostname,
-            port: 8883,
-            identifier: identifier,
-            eventLoopGroupProvider: .createNew,
-            logger: self.logger,
-            configuration: .init(useSSL: true, tlsConfiguration: Self.getTLSConfiguration(withClientKey: true), sniServerName: "soto.codes")
-        )
-    }
-
-    func createWebSocketAndSSLClient(identifier: String) throws -> MQTTClient {
-        return try MQTTClient(
-            host: Self.hostname,
-            port: 8081,
-            identifier: identifier,
-            eventLoopGroupProvider: .createNew,
-            logger: self.logger,
-            configuration: .init(timeout: .seconds(5), useSSL: true, useWebSockets: true, tlsConfiguration: Self.getTLSConfiguration(), sniServerName: "soto.codes", webSocketURLPath: "/mqtt")
-        )
-    }
-    #endif
-
     let logger: Logger = {
         var logger = Logger(label: "MQTTTests")
         logger.logLevel = .trace
@@ -447,68 +402,6 @@ final class MQTTNIOTests: XCTestCase {
             .map { String(describing: $0) }
             .joined(separator: "/")
     }()
-
-    #if canImport(NIOSSL)
-    static var _tlsConfiguration: Result<MQTTClient.TLSConfigurationType, Error> = {
-        do {
-            #if os(Linux)
-            
-            let rootCertificate = try NIOSSLCertificate.fromPEMFile(MQTTNIOTests.rootPath + "/mosquitto/certs/ca.crt")
-            let certificate = try NIOSSLCertificate.fromPEMFile(MQTTNIOTests.rootPath + "/mosquitto/certs/client.crt")
-            let privateKey = try NIOSSLPrivateKey(file: MQTTNIOTests.rootPath + "/mosquitto/certs/client.key", format: .pem)
-            let tlsConfiguration = TLSConfiguration.forClient(
-                trustRoots: .certificates(rootCertificate),
-                certificateChain: certificate.map{ .certificate($0) },
-                privateKey: .privateKey(privateKey)
-            )
-            return .success(.niossl(tlsConfiguration))
-            
-            #else
-            
-            let rootCertificate = try NIOSSLCertificate.fromPEMFile(MQTTNIOTests.rootPath + "/mosquitto/certs/ca.crt")
-            let trustRootCertificates = try rootCertificate.compactMap { SecCertificateCreateWithData(nil, Data(try $0.toDERBytes()) as CFData)}
-            let data = try Data(contentsOf: URL(fileURLWithPath: MQTTNIOTests.rootPath + "/mosquitto/certs/client.p12"))
-            let options: [String: String] = [kSecImportExportPassphrase as String: "BoQOxr1HFWb5poBJ0Z9tY1xcB"]
-            var rawItems: CFArray?
-            let rt = SecPKCS12Import(data as CFData, options as CFDictionary, &rawItems)
-            let items = rawItems! as! Array<Dictionary<String, Any>>
-            let firstItem = items[0]
-            let identity = firstItem[kSecImportItemIdentity as String] as! SecIdentity?
-            let tlsConfiguration = TSTLSConfiguration(
-                trustRoots: trustRootCertificates,
-                clientIdentity: identity
-            )
-            return .success(.ts(tlsConfiguration))
-            
-            #endif
-        } catch {
-            return .failure(error)
-        }
-    }()
-    
-    static func getTLSConfiguration(withTrustRoots: Bool = true, withClientKey: Bool = true) throws -> MQTTClient.TLSConfigurationType {
-        switch _tlsConfiguration {
-        case .success(let config):
-            switch config {
-            case .niossl(let config):
-                return .niossl(TLSConfiguration.forClient(
-                    trustRoots: withTrustRoots == true ? (config.trustRoots ?? .default) : .default,
-                    certificateChain: withClientKey ? config.certificateChain : [],
-                    privateKey: withClientKey ? config.privateKey : nil
-                ))
-            #if !os(Linux)
-            case .ts(let config):
-                return .ts(TSTLSConfiguration(
-                    trustRoots: withTrustRoots == true ? config.trustRoots : nil,
-                    clientIdentity: withClientKey == true ? config.clientIdentity : nil
-                ))
-            #endif
-            }
-        case .failure(let error):
-            throw error
-        }
-    }
-    #endif // canImport(NIOSSL)
 }
 
 class OutboundStallHandler: ChannelOutboundHandler {

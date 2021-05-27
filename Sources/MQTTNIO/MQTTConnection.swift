@@ -4,9 +4,6 @@ import Network
 #endif
 import NIO
 import NIOHTTP1
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
 import NIOTransportServices
 import NIOWebSocket
 
@@ -81,34 +78,13 @@ final class MQTTConnection {
             switch client.configuration.tlsConfiguration {
             case .ts(let config):
                 options = try config.getNWProtocolTLSOptions()
-            #if canImport(NIOSSL)
-            case .niossl:
-                throw MQTTClient.Error.wrongTLSConfig
-            #endif
+                
             default:
                 options = NWProtocolTLS.Options()
             }
             sec_protocol_options_set_tls_server_name(options.securityProtocolOptions, serverName)
             let tlsProvider = NIOTSClientTLSProvider(tlsOptions: options)
             bootstrap = NIOClientTCPBootstrap(tsBootstrap, tls: tlsProvider)
-            if client.configuration.useSSL {
-                return bootstrap.enableTLS()
-            }
-            return bootstrap
-        }
-        #endif
-        #if canImport(NIOSSL) // canImport(Network)
-        if let clientBootstrap = ClientBootstrap(validatingGroup: client.eventLoopGroup) {
-            let tlsConfiguration: TLSConfiguration
-            switch client.configuration.tlsConfiguration {
-            case .niossl(let config):
-                tlsConfiguration = config
-            default:
-                tlsConfiguration = TLSConfiguration.forClient()
-            }
-            let sslContext = try NIOSSLContext(configuration: tlsConfiguration)
-            let tlsProvider = try NIOSSLClientTLSProvider<ClientBootstrap>(context: sslContext, serverHostname: serverName)
-            bootstrap = NIOClientTCPBootstrap(clientBootstrap, tls: tlsProvider)
             if client.configuration.useSSL {
                 return bootstrap.enableTLS()
             }
